@@ -2,6 +2,8 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const app = express();
+const PORT = 3000;
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -13,14 +15,21 @@ const USERS = [
     { id: 2, username: 'eleve', password: '123', role: 'student', bio: 'Élève modèle' },
     { id: 3, username: 'toto', password: '000', role: 'student', bio: 'Redoublant' }
 ];
+app.get('/api/grade', verifyAuth, (req, res) => {
 
+const id = parseInt(req.query.id);
 const GRADES = [
     { id: 101, studentId: 2, subject: 'Maths', value: 18 },
     { id: 102, studentId: 2, subject: 'Histoire', value: 15 },
     { id: 103, studentId: 3, subject: 'Maths', value: 4 },
     { id: 104, studentId: 1, subject: 'Salaire', value: 5000 }
 ];
-
+const grade = ALL_GRADES.find(g => g.id === id);
+if (grade.user !==  req.user.username) {
+return res.status(403).send("INTERDIT")
+}
+res.json(grade);
+});
 const MESSAGES = [
     { id: 1, from: 'admin', content: 'Bienvenue sur l\'intranet.' }
 ];
@@ -43,7 +52,11 @@ app.post('/auth/login', (req, res) => {
     const user = USERS.find(u => u.username === username && u.password === password);
     if (user) {
         res.cookie('session_id', user.id);
-        res.json({ success: true, user: user });
+        res.cookie('auth_token', token, {  
+            httpOnly: true,  
+            sameSite: 'strict'  
+    }); 
+        res.json({ success: true, message: "Authentification réussie" });  
     } else {
         res.status(401).json({ success: false });
     }
@@ -98,10 +111,6 @@ app.get('/api/admin/delete-student', (req, res) => {
     }
 });
 
-app.listen(3000, () => console.log('Server running on port 3000'));
-
-
-
 
 // Route pour mettre à jour son profil
 app.post('/api/update-profile', verifyAuth, (req, res) => {
@@ -111,3 +120,9 @@ app.post('/api/update-profile', verifyAuth, (req, res) => {
 
     res.json({ success: true, user: user });
 });
+
+app.listen(PORT, () => {
+    console.log(`SERVEUR démarrE sur http://localhost:${PORT}`);
+});
+
+

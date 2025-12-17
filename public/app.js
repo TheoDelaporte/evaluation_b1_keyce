@@ -13,7 +13,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
 
     const data = await res.json();
     if (data.success) {
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // localStorage.setItem('user', JSON.stringify(data.user));
         window.location.href = 'dashboard.html';
     } else {
         alert('Erreur login');
@@ -28,12 +28,12 @@ function loadDashboard() {
     }
     const user = JSON.parse(userStr);
 
-    document.getElementById('user-name').innerHTML = user.username;
-    document.getElementById('bio-display').innerHTML = user.bio;
+    document.getElementById('user-name').innerText = user.username;
+    document.getElementById('bio-display').innerText = user.bio;
 
     const params = new URLSearchParams(window.location.search);
     if (params.has('search')) {
-        document.getElementById('search-result').innerHTML = "Résultat pour : " + params.get('search');
+        document.getElementById('search-result').innerText = "Résultat pour : " + params.get('search');
     }
 
     fetch(`/api/grades?studentId=${user.id}`)
@@ -51,7 +51,7 @@ function loadDashboard() {
         .then(msgs => {
             const div = document.getElementById('messages-list');
             msgs.forEach(m => {
-                div.innerHTML += `<p><b>${m.from}:</b> ${m.content}</p>`;
+                div.innerText += `<p><b>${m.from}:</b> ${m.content}</p>`;
             });
         });
 }
@@ -62,7 +62,7 @@ async function updateBio() {
 
     const res = await fetch('/api/profile/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ id: user.id, bio: newBio })
     });
 
@@ -70,7 +70,7 @@ async function updateBio() {
     if (data.success) {
         user.bio = data.user.bio;
         localStorage.setItem('user', JSON.stringify(user)); 
-        document.getElementById('bio-display').innerHTML = user.bio; 
+        document.getElementById('bio-display').textContent = user.bio; 
     }
 }
 
