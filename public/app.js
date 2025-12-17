@@ -28,12 +28,12 @@ function loadDashboard() {
     }
     const user = JSON.parse(userStr);
 
-    document.getElementById('user-name').innerHTML = user.username;
-    document.getElementById('bio-display').innerHTML = user.bio;
+    document.getElementById('user-name').textContent = user.username;
+    document.getElementById('bio-display').textContent = user.bio;
 
     const params = new URLSearchParams(window.location.search);
     if (params.has('search')) {
-        document.getElementById('search-result').innerHTML = "Résultat pour : " + params.get('search');
+        document.getElementById('search-result').innerText = "Résultat pour : " + params.get('search');
     }
 
     fetch(`/api/grades?studentId=${user.id}`)
@@ -42,18 +42,19 @@ function loadDashboard() {
             const list = document.getElementById('grades-list');
             grades.forEach(g => {
                 const colorClass = g.value < 10 ? 'grade-bad' : 'grade-good';
-                list.innerHTML += `<li>${g.subject} : <span class="${colorClass}">${g.value}/20</span> <a href="${API_URL}/api/grade/detail?id=${g.id}">Détail</a></li>`;
+                list.innerHTML+= `<li>${g.subject} : <span class="${colorClass}">${g.value}/20</span> <a href="${API_URL}/api/grade/detail?id=${g.id}">Détail</a></li>`;
             });
         });
 
     fetch('/api/messages')
-        .then(res => res.json())
-        .then(msgs => {
-            const div = document.getElementById('messages-list');
-            msgs.forEach(m => {
-                div.innerHTML += `<p><b>${m.from}:</b> ${m.content}</p>`;
-            });
+    .then(res => res.json())
+    .then(msgs => {
+        const div = document.getElementById('messages-list');      
+        msgs.forEach(m => {
+            div.innerHTML += `<p><b>${m.from}:</b> <span></span></p>`;
+            div.querySelector('p:last-child span').innerText = m.content;
         });
+    });
 }
 
 async function updateBio() {
@@ -70,7 +71,7 @@ async function updateBio() {
     if (data.success) {
         user.bio = data.user.bio;
         localStorage.setItem('user', JSON.stringify(user)); 
-        document.getElementById('bio-display').innerHTML = user.bio; 
+        document.getElementById('bio-display').textContent = user.bio; 
     }
 }
 
