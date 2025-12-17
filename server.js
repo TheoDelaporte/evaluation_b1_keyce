@@ -35,11 +35,19 @@ const verifyAuth = (req, res, next) => {
         return res.status(401).json({ message: "Utilisateur inconnu" });
     }
     req.user = user;
+    res.cookie('auth_token', user, {  
+    httpOnly: true,  
+    sameSite: 'Strict'  
+});
     next();
 };
 
 app.post('/auth/login', (req, res) => {
     const { username, password } = req.body;
+    res.cookie('auth_token', user, {  
+    httpOnly: true,  
+    sameSite: 'Strict'  
+});
     const user = USERS.find(u => u.username === username && u.password === password);
     if (user) {
         res.cookie('session_id', user.id);
@@ -47,26 +55,33 @@ app.post('/auth/login', (req, res) => {
     } else {
         res.status(401).json({ success: false });
     }
+    
 });
 
 app.get('/api/grades', (req, res) => {
     const studentId = parseInt(req.query.studentId);
     const studentGrades = GRADES.filter(g => g.studentId === studentId);
-    res.json(studentGrades);
+    if (studentGrades && req.user.username === 'admin') {
+    res.json(studentGrades);}
+    else{
+        return res.status(401).json({ message: "Action impossible" });
+    }
 });
 
 app.get('/api/grade/detail', (req, res) => {
     const id = parseInt(req.query.id);
     const grade = GRADES.find(g => g.id === id);
-    res.json(grade);
+    if(grade && req.user.username === 'admin'){
+    res.json(grade);}
+    else{
+        return res.status(401).json({ message: "Action impossible" });
+    }
 });
 
 app.post('/api/profile/update', (req, res) => {
-    const userId = req.body.id; 
-    const userIndex = USERS.findIndex(u => u.id == userId);
-    
-    if (userIndex !== -1) {
-        Object.assign(USERS[userIndex], req.body);
+    const bio = req.body.bio;
+    const userIndex = USERS.findIndex(u => u.id == bio);
+    if (bio && userIndex !== -1) { 
         res.json({ success: true, user: USERS[userIndex] });
     } else {
         res.json({ success: false });
@@ -90,7 +105,7 @@ app.post('/api/message', (req, res) => {
 app.get('/api/admin/delete-student', (req, res) => {
     const id = parseInt(req.query.id);
     const index = USERS.findIndex(u => u.id === id);
-    if (index !== -1) {
+    if (index !== -1 && req.user.username === 'admin') {
         USERS.splice(index, 1);
         res.send(`Utilisateur ${id} supprimé.`);
     } else {
@@ -98,16 +113,10 @@ app.get('/api/admin/delete-student', (req, res) => {
     }
 });
 
+
+
 app.listen(3000, () => console.log('Server running on port 3000'));
 
 
 
 
-// Route pour mettre à jour son profil
-app.post('/api/update-profile', verifyAuth, (req, res) => {
-    const user = USERS.find(u => u.id === req.user.id);
-    
-    Object.assign(user, req.body);
-
-    res.json({ success: true, user: user });
-});

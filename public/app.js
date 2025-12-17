@@ -28,12 +28,12 @@ function loadDashboard() {
     }
     const user = JSON.parse(userStr);
 
-    document.getElementById('user-name').innerHTML = user.username;
-    document.getElementById('bio-display').innerHTML = user.bio;
+    document.getElementById('user-name').insertAdjacentHTML('beforeend', user.username);
+    document.getElementById('bio-display').insertAdjacentHTML('beforeend', user.bio);
 
     const params = new URLSearchParams(window.location.search);
     if (params.has('search')) {
-        document.getElementById('search-result').innerHTML = "Résultat pour : " + params.get('search');
+        document.getElementById('search-result').insertAdjacentHTML('beforeend', "Résultat pour : " + params.get('search'));
     }
 
     fetch(`/api/grades?studentId=${user.id}`)
@@ -42,7 +42,7 @@ function loadDashboard() {
             const list = document.getElementById('grades-list');
             grades.forEach(g => {
                 const colorClass = g.value < 10 ? 'grade-bad' : 'grade-good';
-                list.innerHTML += `<li>${g.subject} : <span class="${colorClass}">${g.value}/20</span> <a href="${API_URL}/api/grade/detail?id=${g.id}">Détail</a></li>`;
+                list.insertAdjacentHTML('beforeend', `<li>${g.subject} : <span class="${colorClass}">${g.value}/20</span> <a href="${API_URL}/api/grade/detail?id=${g.id}">Détail</a></li>`);
             });
         });
 
@@ -51,7 +51,7 @@ function loadDashboard() {
         .then(msgs => {
             const div = document.getElementById('messages-list');
             msgs.forEach(m => {
-                div.innerHTML += `<p><b>${m.from}:</b> ${m.content}</p>`;
+                div.insertAdjacentHTML('beforeend', `<p><b>${m.from}:</b> ${m.content}</p>`);
             });
         });
 }
@@ -70,7 +70,7 @@ async function updateBio() {
     if (data.success) {
         user.bio = data.user.bio;
         localStorage.setItem('user', JSON.stringify(user)); 
-        document.getElementById('bio-display').innerHTML = user.bio; 
+        document.getElementById('bio-display').insertAdjacentText('beforeend', user.bio); 
     }
 }
 
