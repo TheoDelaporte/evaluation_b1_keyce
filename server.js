@@ -52,13 +52,24 @@ app.post('/auth/login', (req, res) => {
 app.get('/api/grades', (req, res) => {
     const studentId = parseInt(req.query.studentId);
     const studentGrades = GRADES.filter(g => g.studentId === studentId);
+    
     res.json(studentGrades);
 });
 
 app.get('/api/grade/detail', (req, res) => {
     const id = parseInt(req.query.id);
     const grade = GRADES.find(g => g.id === id);
-    res.json(grade);
+    
+    if(grade){
+        res.json(grade)
+    }
+    else{
+        res.status(404).json({message: "Non Trouvé !"})
+    }
+
+    if (grade.studentId !== req.user.id){
+        return res.status(403).send({ message:"Accès Refusé !"});
+    }
 });
 
 app.post('/api/profile/update', (req, res) => {
