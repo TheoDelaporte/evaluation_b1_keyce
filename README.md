@@ -27,4 +27,4 @@ res.cookie('auth_token', token, {
 5- Sécurisation de la route '/api/grade' dans server.js pour que seul le Propriétaire de l'Id puisse être la seule personne à se connecter et voir ses propres informations
 
 6- (Server.js) Implémentation d'une whilelistening afin que le serveur puisse mettre en ligne le message(const MESSAGES) de bienvenue de la plateforme.
-J'ai supprimé le object.assign 
+J'ai supprimé le object.assign dans les routes '/profile/update' et '/api/update-profile'
