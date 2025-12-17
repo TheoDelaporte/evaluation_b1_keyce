@@ -25,6 +25,19 @@ const MESSAGES = [
     { id: 1, from: 'admin', content: 'Bienvenue sur l\'intranet.' }
 ];
 
+const verifyAuth = (req, res, next) => {
+    const userId = req.cookies.session_id;
+    if (!userId) {
+        return res.status(401).json({ message: "Non connecté" });
+    }
+    const user = USERS.find(u => u.id == userId);
+    if (!user) {
+        return res.status(401).json({ message: "Utilisateur inconnu" });
+    }
+    req.user = user;
+    next();
+};
+
 app.post('/auth/login', (req, res) => {
     const { username, password } = req.body;
     const user = USERS.find(u => u.username === username && u.password === password);
