@@ -1,13 +1,20 @@
+// ===== server.js =====
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const path = require('path');
+const cors = require('cors');
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static('public'));
 
+// Pour tests locaux, autorisation CORS
+app.use(cors({
+    origin: 'http://localhost:5500', // remplacer par l’URL de ton frontend
+    credentials: true
+}));
+
+// ===== Données simulées =====
 const USERS = [
     { id: 1, username: 'admin', password: 'adminpassword', role: 'admin', bio: 'Directeur' },
     { id: 2, username: 'eleve', password: '123', role: 'student', bio: 'Élève modèle' },
@@ -25,76 +32,106 @@ const MESSAGES = [
     { id: 1, from: 'admin', content: 'Bienvenue sur l\'intranet.' }
 ];
 
+// ===== Middleware d'authentification =====
+function verifyAuth(req, res, next) {
+    const sessionId = parseInt(req.cookies.session_id);
+    const user = USERS.find(u => u.id === sessionId);
+
+    if (!user) return res.status(401).json({ success: false, message: 'Non authentifié' });
+
+    req.user = user;
+    next();
+}
+
+// ===== Authentification =====
 app.post('/auth/login', (req, res) => {
     const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ success: false, message: 'Champs requis' });
+
     const user = USERS.find(u => u.username === username && u.password === password);
-    if (user) {
-        res.cookie('session_id', user.id);
-        res.json({ success: true, user: user });
-    } else {
-        res.status(401).json({ success: false });
-    }
+    if (!user) return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
+
+    // Cookie sécurisé
+    res.cookie('session_id', user.id, { httpOnly: true, sameSite: 'strict' });
+    res.json({ success: true, user: { id: user.id, username: user.username, role: user.role, bio: user.bio } });
 });
 
-app.get('/api/grades', (req, res) => {
+// ===== API sécurisée =====
+
+// Notes (IDOR corrigé)
+app.get('/api/grades', verifyAuth, (req, res) => {
     const studentId = parseInt(req.query.studentId);
+    if (!studentId) return res.status(400).json({ error: 'ID étudiant requis' });
+
+    if (req.user.role === 'student' && req.user.id !== studentId) {
+        return res.status(403).json({ error: 'Accès interdit' });
+    }
+
     const studentGrades = GRADES.filter(g => g.studentId === studentId);
     res.json(studentGrades);
 });
 
-app.get('/api/grade/detail', (req, res) => {
+// Détail d'une note
+app.get('/api/grade/detail', verifyAuth, (req, res) => {
     const id = parseInt(req.query.id);
+    if (!id) return res.status(400).json({ error: 'ID note requis' });
+
     const grade = GRADES.find(g => g.id === id);
+    if (!grade) return res.status(404).json({ error: 'Note introuvable' });
+
+    if (req.user.role === 'student' && grade.studentId !== req.user.id) {
+        return res.status(403).json({ error: 'Accès interdit' });
+    }
+
     res.json(grade);
 });
 
-app.post('/api/profile/update', (req, res) => {
-    const userId = req.body.id; 
-    const userIndex = USERS.findIndex(u => u.id == userId);
-    
-    if (userIndex !== -1) {
-        Object.assign(USERS[userIndex], req.body);
-        res.json({ success: true, user: USERS[userIndex] });
-    } else {
-        res.json({ success: false });
-    }
+// Mise à jour du profil (route unique sécurisée)
+app.post('/api/update-profile', verifyAuth, (req, res) => {
+    const { bio } = req.body;
+    if (bio && bio.length > 200) return res.status(400).json({ error: 'Bio trop longue (max 200 caractères)' });
+
+    const userIndex = USERS.findIndex(u => u.id === req.user.id);
+    if (userIndex === -1) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    if (bio) USERS[userIndex].bio = bio;
+
+    res.json({ success: true, user: { id: USERS[userIndex].id, username: USERS[userIndex].username, role: USERS[userIndex].role, bio: USERS[userIndex].bio } });
 });
 
-app.get('/api/messages', (req, res) => {
+// Messages
+app.get('/api/messages', verifyAuth, (req, res) => {
     res.json(MESSAGES);
 });
 
-app.post('/api/message', (req, res) => {
+app.post('/api/message', verifyAuth, (req, res) => {
+    const { content } = req.body;
+    if (!content || content.length > 300) return res.status(400).json({ error: 'Message vide ou trop long (max 300 caractères)' });
+
     const newMessage = {
         id: MESSAGES.length + 1,
-        from: req.cookies.session_id || 'Anonyme',
-        content: req.body.content
+        from: req.user.username,
+        content
     };
+
     MESSAGES.push(newMessage);
     res.json({ success: true });
 });
 
-app.get('/api/admin/delete-student', (req, res) => {
+// Suppression d'élève (ADMIN seulement)
+app.get('/api/admin/delete-student', verifyAuth, (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).send('Accès refusé');
+
     const id = parseInt(req.query.id);
+    if (!id) return res.status(400).send('ID requis');
+
     const index = USERS.findIndex(u => u.id === id);
-    if (index !== -1) {
-        USERS.splice(index, 1);
-        res.send(`Utilisateur ${id} supprimé.`);
-    } else {
-        res.send('Introuvable');
-    }
+    if (index === -1) return res.send('Introuvable');
+
+    USERS.splice(index, 1);
+    res.send(`Utilisateur ${id} supprimé.`);
 });
 
-app.listen(3000, () => console.log('Server running on port 3000'));
-
-
-
-
-// Route pour mettre à jour son profil
-app.post('/api/update-profile', verifyAuth, (req, res) => {
-    const user = USERS.find(u => u.id === req.user.id);
-    
-    Object.assign(user, req.body);
-
-    res.json({ success: true, user: user });
-});
+// ===== Lancement du serveur =====
+const PORT = 3000;
+app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
