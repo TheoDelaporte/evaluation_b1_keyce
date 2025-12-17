@@ -42,8 +42,9 @@ app.post('/auth/login', (req, res) => {
     const { username, password } = req.body;
     const user = USERS.find(u => u.username === username && u.password === password);
     if (user) {
-        res.cookie('session_id', user.id);
-        res.json({ success: true, user: user });
+        res.cookie('session_id', user.id, {
+        httpOnly: true, sameSite: 'strict', secure: true });
+
     } else {
         res.status(401).json({ success: false });
     }
@@ -52,7 +53,13 @@ app.post('/auth/login', (req, res) => {
 app.get('/api/grades', (req, res) => {
     const studentId = parseInt(req.query.studentId);
     const studentGrades = GRADES.filter(g => g.studentId === studentId);
+
+    if (req.user.role !== 'admin' && req.user.id !== studentId) {
+        return res.status(403).json({ message: 'Accès interdit' });
+} else {
     res.json(studentGrades);
+}
+    
 });
 
 app.get('/api/grade/detail', (req, res) => {
@@ -87,9 +94,15 @@ app.post('/api/message', (req, res) => {
     res.json({ success: true });
 });
 
-app.get('/api/admin/delete-student', (req, res) => {
+app.get('/api/admin/delete-student', verifyAuth, (req, res) => {
     const id = parseInt(req.query.id);
     const index = USERS.findIndex(u => u.id === id);
+    
+    if (req.user.role !== 'admin') {
+        return res.status(403).send('Interdit');
+
+    }
+
     if (index !== -1) {
         USERS.splice(index, 1);
         res.send(`Utilisateur ${id} supprimé.`);
@@ -97,11 +110,6 @@ app.get('/api/admin/delete-student', (req, res) => {
         res.send('Introuvable');
     }
 });
-
-app.listen(3000, () => console.log('Server running on port 3000'));
-
-
-
 
 // Route pour mettre à jour son profil
 app.post('/api/update-profile', verifyAuth, (req, res) => {
@@ -111,3 +119,9 @@ app.post('/api/update-profile', verifyAuth, (req, res) => {
 
     res.json({ success: true, user: user });
 });
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+
+
+
+
