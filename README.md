@@ -6,4 +6,3 @@
 5-Erreur IDOR pour la suppression de l'utilisateurs .Solution: Modifier le if().
 6-Erreur au niveau de l'update du profil pour devenir Admin. Solution: suppression de "Object.assign" et implementation de la liste blanche.
 8-Dans le login le token n'était pas protéger.Solution: Ajout du cookies sécurisée avec : HttpOnly.
-9-
