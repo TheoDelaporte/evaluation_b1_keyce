@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>SafeSchool - Espace Élève</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .card { background: #eee; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .grade-bad { color: red; font-weight: bold; }
+        .grade-good { color: green; font-weight: bold; }
+        #search-result { margin-top: 10px; color: blue; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SafeSchool</h1>
+        <div>
+            Bonjour <span id="user-name">...</span> 
+            (<a href="#" onclick="logout()">Déconnexion</a>)
+        </div>
+    </header>
+
+    <div id="search-section">
+        <h3>Rechercher un cours</h3>
+        <p id="search-result"></p> 
+    </div>
+
+    <div class="card">
+        <h3>Mon Profil</h3>
+        <div id="bio-display">Chargement...</div>
+        <hr>
+        <input type="text" id="new-bio" placeholder="Nouvelle bio">
+        <button onclick="updateBio()">Mettre à jour</button>
+    </div>
+
+    <div class="card">
+        <h3>Mes Notes</h3>
+        <ul id="grades-list"></ul>
+    </div>
+
+    <div class="card">
+        <h3>Mur de la classe</h3>
+        <div id="messages-list"></div>
+        <br>
+        <textarea id="msg-content" placeholder="Votre message..."></textarea>
+        <button onclick="postMessage()">Envoyer</button>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        if(window.location.pathname.includes('dashboard')) {
+            loadDashboard();
+        }
+    </script>
+</body>
+</html>
