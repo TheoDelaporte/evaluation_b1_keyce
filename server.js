@@ -77,14 +77,30 @@ app.get('/api/grade/detail', (req, res) => {
 app.post('/api/profile/update', (req, res) => {
     const userId = req.body.id; 
     const userIndex = USERS.findIndex(u => u.id == userId);
-    
-    if (userIndex !== -1) {
-        Object.assign(USERS[userIndex], req.body);
-        res.json({ success: true, user: USERS[userIndex] });
-    } else {
-        res.json({ success: false });
+
+    if (userIndex === -1) {
+        return res.json({ success: false });
     }
+
+    const allowedFields = ['content', 'username', 'avatar'];
+
+    allowedFields.forEach(field => {
+        if (req.body[field] !== undefined) {
+            let value = req.body[field];
+
+            if (field === 'content') {
+                value = purify.sanitize(value, {
+                    USE_PROFILES: { html: true }
+                });
+            }
+
+            USERS[userIndex][field] = value;
+        }
+    });
+
+    res.json({ success: true, user: USERS[userIndex] });
 });
+
 
 app.get('/api/messages', (req, res) => {
     res.json(MESSAGES);
@@ -113,13 +129,21 @@ app.get('/api/admin/delete-student', (req, res) => {
 
 
 // Route pour mettre à jour son profil
-app.post('/api/update-profile', verifyAuth, (req, res) => {
-    const user = USERS.find(u => u.id === req.user.id);
-    
-    Object.assign(user, req.body);
+app.put('/api/update-profile:id',
+  sanitizeAndWhitelist(['content']),
+  async (req, res) => {
+    const user = await user.findById(req.params.id);
 
-    res.json({ success: true, user: user });
-});
+    Object.assign(user, req.filteredBody);
+
+    await user.save();
+
+    res.json({
+      message: 'Profil mis à jour',user
+    });
+  }
+);
+
 
 app.listen(PORT, () => {
     console.log(`SERVEUR démarrE sur http://localhost:${PORT}`);
